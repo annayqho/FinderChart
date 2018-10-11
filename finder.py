@@ -7,7 +7,24 @@ import pandas as pd
 import astropy.wcs
 from scipy.ndimage.filters import gaussian_filter
 from astropy.time import Time
+from astropy.coordinates import SkyCoord
 from ztfquery import query,marshal
+from ztfquery.io import download_single_url
+from ztfquery.io import get_cookie
+
+
+def get_offset(ra1, dec1, ra2, dec2):
+    '''
+    Code from Nadia
+    Computes the offset in arcsec between two coordinates.
+    The offset is from (ra1, dec1) which is the offset star
+    to ra2, dec2 which is the fainter target
+    '''
+    bright_star = SkyCoord(ra1, dec1, frame='icrs', unit=(u.deg, u.deg))
+    target = SkyCoord(ra2, dec2, frame='icrs', unit=(u.deg, u.deg))
+    dra, ddec = bright_star.spherical_offsets_to(target)
+    
+    return dra.to(u.arcsec).value, ddec.to(u.arcsec).value 
 
 
 def get_pos(name):
@@ -26,9 +43,10 @@ def get_pos(name):
 
 def get_lc(name):
     """ Get light curve of target """
-    m.download_lightcurve(name) # dirout option doesn't seem to work?
-    out_dir = "Data/marshal/lightcurves/%s/" %name
-    lc_dict = pd.read_csv(out_dir + "marshal_lightcurve_%s.csv" %name)
+    m.download_lightcurve(name) 
+    lc = marshal.get_local_lightcurves(name)
+    lc_dict = [lc[key] for key in lc.keys()][0]
+    return lc_dict
 
 
 def get_refstars(xpos, ypos, cat):
@@ -85,6 +103,36 @@ def get_refstars(xpos, ypos, cat):
     return refstars
 
 
+def choose_ref(ra, dec):
+    """ Choose a reference image to use, and download the file
+    including the associated PSF cat
+
+    Parameters
+    ----------
+    ra: position of source in decimal degrees
+    dec: position of source in decimal degrees
+
+    Returns
+    -------
+    the filename of what you just downloaded (IPAC link)
+    the location of the file (local link)
+    """
+    zquery.load_metadata(kind="ref",radec=[ra, dec], size=0.0001)
+    out = zquery.metatable
+    # choose the index of the file with the deepest maglimit
+    ind = np.argmax(out['maglimit'])
+    urls, dl_loc = zquery.download_data(nodl=True)
+    imfile = dl_loc[ind]
+    # default is refimg
+    download_single_url(urls[ind], dl_loc[ind], cookies=None) 
+    # download the associated PSFcat
+    urls, dl_loc = zquery.download_data(nodl=True, suffix='refpsfcat.fits')
+    catfile = dl_loc[ind]
+    download_single_url(
+            urls[ind], dl_loc[ind], cookies=None)
+    return imfile, catfile
+
+
 # Name of target
 name = "ZTF18abkmbpy"
 
@@ -101,41 +149,37 @@ out = zquery.metatable
 
 # Do you need to use a reference image?
 need_ref = len(out) == 0
-
-# If there are none, then use a reference image
 if need_ref:
-    zquery.load_metadata(kind="ref",radec=[ra, dec], size=0.0001)
-    out = zquery.metatable
-    zquery.download_data()
+    imfile, catfile = choose_ref(ra, dec)
 
 # Count the number of detections where limmag > 19.5
 # If 0, allow limmag > 19
-limmag = out.maglimit.values
-limmag_val = 19.5 # must be deeper than this value
-choose = limmag > limmag_val
-while sum(choose) == 0:
-    limmag_val += 0.5
-    choose = limmag > limmag_val
-im_ind = np.argmax(limmag[choose])
+# limmag = out.maglimit.values
+# limmag_val = 19.5 # must be deeper than this value
+# choose = limmag > limmag_val
+# while sum(choose) == 0:
+#     limmag_val += 0.5
+#     choose = limmag > limmag_val
+# im_ind = np.argmax(limmag[choose])
 # Need a way to download just one of them...
 # out[choose][im_ind] # index of the image you choose
 
-# For now, just choose the file
-ref_file = "Data/ref/000/field000796/zr/ccd11/q1/ztf_000796_zr_c11_q1_refimg.fits"
-
 # get the cutout
-inputf = pyfits.open(ref_file)
+inputf = pyfits.open(imfile)
 im = inputf[0].data
 head = inputf[0].header
 inputf.close()
 
-# Get the x and y position of the target
+# Get the x and y position of the target,
+# as per the IPAC catalog
 wcs = astropy.wcs.WCS(head)
 target_pix = wcs.wcs_world2pix([(np.array([ra,dec], np.float_))], 1)[0]
 xpos = target_pix[0]
 ypos = target_pix[1]
 
 # plot the finder chart (code from Nadia)
+
+# aesthetics
 
 # adjust counts
 im[np.isnan(im)] = 0
@@ -153,17 +197,76 @@ plt.figure(figsize=(8,6))
 plt.set_cmap('gray_r')
 smoothedimage = gaussian_filter(im, 1.3)
 plt.imshow(
-        np.fliplr(smoothedimage[int(ymin):int(ymax),int(xmin):int(xmax)]), 
-        origin='upper',
+        smoothedimage[int(ymin):int(ymax),int(xmin):int(xmax)], 
+        origin='lower', # convention for IPAC images
         vmin=np.percentile(im.flatten(), 10),
         vmax=np.percentile(im.flatten(), 99.0))
 
 # Mark target: should just be the center of the image, now
-plt.plot([300+20,300+10],[300,300], 'g-', lw=2)
-plt.plot([300,300],[300+10,300+20], 'g-', lw=2)
+# horizontal line
+plt.plot([300+5,300+20],[300,300], 'g-', lw=2)
+# vertical line
+plt.plot([300,300],[300+5,300+20], 'g-', lw=2)
+# and the offset of the original coordinate system with the new coordinates
+offset_x = xpos-300
+offset_y = ypos-300
 
+# Choose offset stars
+cat = pyfits.open(catfile)[1].data
+zp = pyfits.open(catfile)[0].header['MAGZP']
+sep_pix = np.sqrt(
+        (xpos-cat['xpos'])**2 + \
+        (ypos-cat['ypos'])**2)
+
+# should be separated by at least 10 pixels
+crit_a = np.logical_and(sep_pix > 10, cat['flags']==0)
+crit_b = np.logical_and(
+        cat['chi'] < 2, cat['snr'] > 10)
+crit_c = cat['sharp'] < 0.3
+crit_ab = np.logical_and(crit_a, crit_b)
+crit = np.logical_and(crit_ab, crit_c)
+
+# should be bright
+mag_crit = np.logical_and(cat['mag']+zp >= 15, cat['mag']+zp <= 19)
+choose_ind = np.where(np.logical_and(crit, mag_crit))
+
+# mark the closest three stars
+nref = 3
+order = np.argsort(sep_pix[choose_ind])
+cols = ['orange', 'purple', 'red']
+
+for ii in np.arange(nref):
+    ref_xpos = cat['xpos'][choose_ind][order][ii] - offset_x
+    ref_ypos = cat['ypos'][choose_ind][order][ii] - offset_y
+    plt.plot(
+            [ref_xpos+5,ref_xpos+20],[ref_ypos,ref_ypos], 
+            c=cols[ii], ls='-', lw=2)
+    plt.plot(
+            [ref_xpos,ref_xpos],[ref_ypos+5,ref_ypos+20], 
+            c = cols[ii], ls='-', lw=2) 
+
+
+# Plot compass
+plt.plot(
+        [width-10,height-40], [10,10], 'k-', lw=2)
+plt.plot(
+        [width-10,height-10], [10,40], 'k-', lw=2)
+plt.annotate(
+    "N", xy=(width-20, 40), xycoords='data',
+    xytext=(-4,5), textcoords='offset points')
+plt.annotate(
+    "E", xy=(height-40, 20), xycoords='data',
+    xytext=(-12,-5), textcoords='offset points')
+
+
+# Get rid of axis labels
+plt.gca().get_xaxis().set_visible(False)
+plt.gca().get_yaxis().set_visible(False)
 
 # Set size of window (leaving space to right for ref star coords)
 plt.subplots_adjust(right=0.65,left=0.05, top=0.99, bottom=0.05)
+
+# List the offsets in a table
+
 
 plt.show()
