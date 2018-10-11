@@ -1,6 +1,7 @@
 """ Finder chart script, using ztfquery """
 
 import numpy as np
+import pyfits
 import matplotlib.pyplot as plt
 import pandas as pd
 from astropy.time import Time
@@ -45,21 +46,13 @@ while sum(choose) == 0:
     limmag_val += 0.5
     choose = limmag > limmag_val
 im_ind = np.argmax(limmag[choose])
-out[choose][im_ind] # index of the image you choose
+# Need a way to download just one of them...
+# out[choose][im_ind] # index of the image you choose
 
+# For now, just choose the file
+ref_file = "Data/ref/000/field000796/zr/ccd11/q1/ztf_000796_zr_c11_q1_refimg.fits"
 
-# Construct a light curve at this position
-
-
-# Among those images, choose the most recent one in time
-all_jd = out[choose].obsjd.values
-indx = np.argmin(np.abs(all_jd-t.jd))
-out[choose].values[indx]
-
-# obs closest in time to the detection
-# choose = np.argmin(np.abs(all_jd-t.jd))
-# metadata corresponding to that observation
-# zquery.load_metadata(
-#         radec=[ra,dec], size=0.01, sql_query="obsjd=%s" %all_jd[choose])
-# out = zquery.metatable
-#zquery.download_data("psfcat.fits", show_progress=True, overwrite=True)
+# get the cutout
+inputf = pyfits.open(ref_file)
+im = inputf[0].data
+inputf.close()
