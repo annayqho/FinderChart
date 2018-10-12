@@ -4,6 +4,8 @@ import numpy as np
 import pyfits
 import matplotlib.pyplot as plt
 import pandas as pd
+import argparse
+import sys
 import astropy.wcs
 from scipy.ndimage.filters import gaussian_filter
 from astropy.time import Time
@@ -115,7 +117,7 @@ def get_refstars(xpos, ypos, cat):
     return refstars
 
 
-def choose_ref(ra, dec):
+def choose_ref(zquery, ra, dec):
     """ Choose a reference image to use, and download the file
     including the associated PSF cat
 
@@ -169,7 +171,7 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
     need_ref = len(out) == 0
     if need_ref:
         print("Using a reference image")
-        imfile, catfile = choose_ref(ra, dec)
+        imfile, catfile = choose_ref(zquery, ra, dec)
 
     # Count the number of detections where limmag > 19.5
     # If 0, allow limmag > 19
@@ -196,10 +198,6 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
     xpos = target_pix[0]
     ypos = target_pix[1]
 
-    # plot the finder chart (code from Nadia)
-
-    # aesthetics
-
     # adjust counts
     im[np.isnan(im)] = 0
     im[im > 30000] = 30000
@@ -216,7 +214,7 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
     plt.set_cmap('gray_r')
     smoothedimage = gaussian_filter(im, 1.3)
     plt.imshow(
-            smoothedimage[int(ymin):int(ymax),int(xmin):int(xmax)], 
+            np.flipud(np.fliplr(smoothedimage[int(ymin):int(ymax),int(xmin):int(xmax)])), 
             origin='lower', # convention for IPAC images
             vmin=np.percentile(im.flatten(), 10),
             vmax=np.percentile(im.flatten(), 99.0))
@@ -263,8 +261,11 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
         separator = "!"
 
     for ii in np.arange(nref):
-        ref_xpos = cat['xpos'][choose_ind][order][ii] - offset_x
-        ref_ypos = cat['ypos'][choose_ind][order][ii] - offset_y
+        ref_xpos_original = cat['xpos'][choose_ind][order][ii] - offset_x
+        ref_ypos_original = cat['ypos'][choose_ind][order][ii] - offset_y
+        # transform to flipped plot
+        ref_xpos = 600-ref_xpos_original
+        ref_ypos = 600-ref_ypos_original
         plt.plot(
                 [ref_xpos+5,ref_xpos+20],[ref_ypos,ref_ypos], 
                 c=cols[ii], ls='-', lw=2)
