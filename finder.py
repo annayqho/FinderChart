@@ -7,10 +7,23 @@ import pandas as pd
 import astropy.wcs
 from scipy.ndimage.filters import gaussian_filter
 from astropy.time import Time
+from astropy import units as u
 from astropy.coordinates import SkyCoord
 from ztfquery import query,marshal
 from ztfquery.io import download_single_url
 from ztfquery.io import get_cookie
+
+
+def deg2hour(ra, dec, sep=":"):
+    '''
+    Transforms the coordinates in degrees into HH:MM:SS DD:MM:SS with the requested separator.
+    '''
+    if ( type(ra) is str and type(dec) is str ):
+        return ra, dec
+    c = SkyCoord(ra, dec, frame='icrs', unit='deg')
+    ra = c.ra.to_string(unit=u.hourangle, sep=sep, precision=2, pad=True)
+    dec = c.dec.to_string(sep=sep, precision=2, alwayssign=True, pad=True)
+    return str(ra), str(dec)
 
 
 def get_offset(ra1, dec1, ra2, dec2):
@@ -23,7 +36,6 @@ def get_offset(ra1, dec1, ra2, dec2):
     bright_star = SkyCoord(ra1, dec1, frame='icrs', unit=(u.deg, u.deg))
     target = SkyCoord(ra2, dec2, frame='icrs', unit=(u.deg, u.deg))
     dra, ddec = bright_star.spherical_offsets_to(target)
-    
     return dra.to(u.arcsec).value, ddec.to(u.arcsec).value 
 
 
@@ -244,6 +256,25 @@ for ii in np.arange(nref):
     plt.plot(
             [ref_xpos,ref_xpos],[ref_ypos+5,ref_ypos+20], 
             c = cols[ii], ls='-', lw=2) 
+    refra = cat['ra'][choose_ind][order][ii]
+    refdec = cat['dec'][choose_ind][order][ii]
+    dra, ddec = get_offset(refra, refdec, ra, dec)
+    drah, ddech = deg2hour(dra, ddec)
+
+    plt.text(
+            1.02, 0.70, 'Ref %s' %ii, 
+            transform=plt.axes().transAxes, fontweight='bold', color=cols[ii])
+    plt.text(
+            1.02, 0.65, "%.5f %.5f"%(refra, refdec),
+            transform=plt.axes().transAxes, color=cols[ii])
+    rah, dech = deg2hour(refra, refdec)
+    plt.text(
+            1.02, 0.60,rah+"  "+dech, 
+            transform=plt.axes().transAxes, color=cols[ii])
+    plt.text(
+            1.02, 0.55, 
+            drah + "arcsec N, " + ddech + "arcsec E", color=cols[ii],
+            transform=plt.axes().transAxes)
 
 
 # Plot compass
@@ -268,5 +299,10 @@ plt.subplots_adjust(right=0.65,left=0.05, top=0.99, bottom=0.05)
 
 # List the offsets in a table
 
+# List name, coords, mag of reference
+plt.text(1.02, 0.85, name, transform=plt.axes().transAxes, fontweight='bold')
+plt.text(1.02, 0.80, "%.5f %.5f"%(ra, dec),transform=plt.axes().transAxes)
+rah, dech = deg2hour(ra, dec)
+plt.text(1.02, 0.75,rah+"  "+dech, transform=plt.axes().transAxes)
 
 plt.show()
