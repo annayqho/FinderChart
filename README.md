@@ -10,6 +10,7 @@ RA and Dec in decimal degrees.
 Generates a finder chart image, and prints starlist for DBSP or Keck
 
 Borrows heavily from Nadia's PS1 finder chart code,
-https://github.com/nblago/utils/blob/master/finder\_chart.py
+https://github.com/nblago/utils/blob/master/finder_chart.py
+
 and makes use of ztfquery,
 https://github.com/MickaelRigault/ztfquery
