@@ -224,7 +224,7 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
     # adjust counts
     im[np.isnan(im)] = 0
     im[im > 30000] = 30000
-
+    
     # extract 600x600 region around the position of the target
     width = 600
     height = 600
@@ -236,9 +236,13 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
     plt.figure(figsize=(8,6))
     plt.set_cmap('gray_r')
     smoothedimage = gaussian_filter(im, 1.3)
+    # pad the image
+    im_padded = np.pad(smoothedimage, 300, mode='constant', constant_values=0)
+    croppedimage = np.flipud(np.fliplr(
+        im_padded[int(ymin)+300:int(ymax)+300,int(xmin)+300:int(xmax)+300]))
+
     plt.imshow(
-            np.flipud(np.fliplr(smoothedimage[int(ymin):int(ymax),int(xmin):int(xmax)])), 
-            origin='lower', # convention for IPAC images
+            croppedimage, origin='lower', # convention for IPAC images
             vmin=np.percentile(im.flatten(), 10),
             vmax=np.percentile(im.flatten(), 99.0))
 
