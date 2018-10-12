@@ -47,7 +47,7 @@ def get_pos(name):
     This is very slow, so it's probably better
     to supply an RA and DEC
     """
-    m = marshal.MarshalAccess(auth=['annayqho', 'd1ewdw11z_growth'])
+    m = marshal.MarshalAccess()
     m.load_target_sources()
     coords = m.get_target_coordinates(name)
     ra = coords.ra.values[0]
@@ -57,6 +57,7 @@ def get_pos(name):
 
 def get_lc(name):
     """ Get light curve of target """
+    m = marshal.MarshalAccess()
     m.download_lightcurve(name) 
     lc = marshal.get_local_lightcurves(name)
     lc_dict = [lc[key] for key in lc.keys()][0]
@@ -147,24 +148,48 @@ def choose_ref(zquery, ra, dec):
     return imfile, catfile
 
 
+def choose_sci(zquery, out, name, ra, dec):
+    """ Choose a science image to use, and download the file """
+    lc = get_lc(name)
+    # Count the number of detections where limmag > 19.5
+    # If 0, allow limmag > 19
+    limmag = lc.limmag.values
+    limmag_val = 19.5 # must be deeper than this value
+    choose = limmag > limmag_val
+    while sum(choose) == 0:
+        limmag_val += 0.5
+        choose = limmag > limmag_val
+
+    # Now of all these images, choose the one where the transient
+    # is brightest
+    ind = np.argmin(lc.magpsf.values[choose])
+    jd_choose = lc['jdobs'][choose][ind] 
+    mag_choose = lc['magpsf'][choose][ind]
+    filt_choose = lc['filter'][choose][ind]
+
+    # Download the corresponding science image
+    ind = np.argmin(np.abs(out.obsjd-jd_choose))
+    urls, dl_loc = zquery.download_data(nodl=True)
+    imfile = dl_loc[ind]
+    download_single_url(urls[ind], dl_loc[ind], cookies=None)
+    urls, dl_loc = zquery.download_data(nodl=True, suffix='psfcat.fits')
+    catfile = dl_loc[ind]
+    download_single_url(
+            urls[ind], dl_loc[ind], cookies=None)
+    return imfile, catfile
+
+
 def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=True, telescope="P200", directory=".", minmag=15, maxmag=18.5, mag=np.nan):
-    telescope = "P200"
-    starlist = None
-    print_starlist = True
+    """ Generate finder chart (Code modified from Nadia) """
 
-    # Name of target
-    name = "ZTF18abkmbpy"
-
-    # Position
-    ra = 256.309518
-    dec = 56.216698
+    ra = float(ra)
+    dec = float(dec)
 
     # Get metadata of all images at this location
     print("Querying for metadata...")
     zquery = query.ZTFQuery()
     zquery.load_metadata(
-            radec=[ra,dec], size=0.01,
-            auth=['ah@astro.caltech.edu', 'd1ewdw11z_IRSA'])
+            radec=[ra,dec], size=0.01)
     out = zquery.metatable
 
     # Do you need to use a reference image?
@@ -172,18 +197,9 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
     if need_ref:
         print("Using a reference image")
         imfile, catfile = choose_ref(zquery, ra, dec)
-
-    # Count the number of detections where limmag > 19.5
-    # If 0, allow limmag > 19
-    # limmag = out.maglimit.values
-    # limmag_val = 19.5 # must be deeper than this value
-    # choose = limmag > limmag_val
-    # while sum(choose) == 0:
-    #     limmag_val += 0.5
-    #     choose = limmag > limmag_val
-    # im_ind = np.argmax(limmag[choose])
-    # Need a way to download just one of them...
-    # out[choose][im_ind] # index of the image you choose
+    else:
+        print("Using a science image")
+        imfile, catfile = choose_sci(zquery, out, name, ra, dec)
 
     # get the cutout
     inputf = pyfits.open(imfile)
@@ -281,19 +297,12 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
         plt.text(
                 1.02, 0.60-0.1*ii, 'Ref S%s' %(ii+1), 
                 transform=plt.axes().transAxes, fontweight='bold', color=cols[ii])
-        # plt.text(
-        #         1.02, 0.65-0.2*ii, "%.5f %.5f"%(refra, refdec),
-        #         transform=plt.axes().transAxes, color=cols[ii])
-        # plt.text(
-        #         1.02, 0.60-0.2*ii,refrah+"  "+np.round(ddec,2), 
-        #         transform=plt.axes().transAxes, color=cols[ii])
         plt.text(
                 1.02, 0.55-0.1*ii, 
                 str(np.round(ddec,2)) + "'' N, " + str(np.round(dra,2)) + "'' E", 
                 color=cols[ii], transform=plt.axes().transAxes)
         # Print starlist for telescope
         print ("{:s} {:s} {:s}  2000.0 {:s} raoffset={:.2f} decoffset={:.2f} r={:.1f} {:s} ".format((name+"_S%s" %(ii+1)).ljust(20), refrah, refdech, separator, dra, ddec, refmag, commentchar))
-
 
     # Plot compass
     plt.plot(
@@ -306,7 +315,6 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
     plt.annotate(
         "E", xy=(height-40, 20), xycoords='data',
         xytext=(-12,-5), textcoords='offset points')
-
 
     # Get rid of axis labels
     plt.gca().get_xaxis().set_visible(False)
