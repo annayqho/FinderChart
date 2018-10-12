@@ -7,6 +7,7 @@ import pandas as pd
 import argparse
 import sys
 import astropy.wcs
+from astropy.io import fits
 from scipy.ndimage.filters import gaussian_filter
 from astropy.time import Time
 from astropy import units as u
@@ -204,8 +205,8 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
     # get the cutout
     inputf = pyfits.open(imfile)
     im = inputf[0].data
-    head = inputf[0].header
     inputf.close()
+    head = fits.getheader(imfile)
 
     # Get the x and y position of the target,
     # as per the IPAC catalog
@@ -399,4 +400,4 @@ if __name__ == '__main__':
         print ('Assuming that the telescope you observe will be P200. \
                 If it is "Keck", please specify otherwise.')
     
-    get_finder(ra, dec, name, rad, telescope=telescope, debug=False, minmag=7, maxmag=17)
+    get_finder(ra, dec, name, rad, telescope=telescope, debug=False, minmag=7, maxmag=18)
