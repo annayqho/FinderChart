@@ -153,6 +153,7 @@ ra = 256.309518
 dec = 56.216698
 
 # Get metadata of all images at this location
+print("Querying for metadata...")
 zquery = query.ZTFQuery()
 zquery.load_metadata(
         radec=[ra,dec], size=0.01,
@@ -162,6 +163,7 @@ out = zquery.metatable
 # Do you need to use a reference image?
 need_ref = len(out) == 0
 if need_ref:
+    print("Using a reference image")
     imfile, catfile = choose_ref(ra, dec)
 
 # Count the number of detections where limmag > 19.5
@@ -259,22 +261,20 @@ for ii in np.arange(nref):
     refra = cat['ra'][choose_ind][order][ii]
     refdec = cat['dec'][choose_ind][order][ii]
     dra, ddec = get_offset(refra, refdec, ra, dec)
-    drah, ddech = deg2hour(dra, ddec)
 
     plt.text(
-            1.02, 0.70, 'Ref %s' %ii, 
+            1.02, 0.60-0.1*ii, 'Ref %s' %ii, 
             transform=plt.axes().transAxes, fontweight='bold', color=cols[ii])
+    # plt.text(
+    #         1.02, 0.65-0.2*ii, "%.5f %.5f"%(refra, refdec),
+    #         transform=plt.axes().transAxes, color=cols[ii])
+    # plt.text(
+    #         1.02, 0.60-0.2*ii,refrah+"  "+np.round(ddec,2), 
+    #         transform=plt.axes().transAxes, color=cols[ii])
     plt.text(
-            1.02, 0.65, "%.5f %.5f"%(refra, refdec),
-            transform=plt.axes().transAxes, color=cols[ii])
-    rah, dech = deg2hour(refra, refdec)
-    plt.text(
-            1.02, 0.60,rah+"  "+dech, 
-            transform=plt.axes().transAxes, color=cols[ii])
-    plt.text(
-            1.02, 0.55, 
-            drah + "arcsec N, " + ddech + "arcsec E", color=cols[ii],
-            transform=plt.axes().transAxes)
+            1.02, 0.55-0.1*ii, 
+            str(np.round(ddec,2)) + "'' N, " + str(np.round(dra,2)) + "'' E", 
+            color=cols[ii], transform=plt.axes().transAxes)
 
 
 # Plot compass
