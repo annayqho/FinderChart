@@ -1,7 +1,7 @@
 """ Finder chart script, using ztfquery """
 
 import numpy as np
-import pyfits
+from astropy.io import fits as pyfits
 import matplotlib.pyplot as plt
 import pandas as pd
 import argparse
