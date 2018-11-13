@@ -165,9 +165,9 @@ def choose_sci(zquery, out, name, ra, dec):
         # Of all these images, choose the one where the transient
         # is brightest
         ind = np.argmin(lc.magpsf.values[choose])
-        jd_choose = lc['jdobs'][choose][ind] 
-        mag_choose = lc['magpsf'][choose][ind]
-        filt_choose = lc['filter'][choose][ind]
+        jd_choose = lc['jdobs'][choose].values[ind] 
+        mag_choose = lc['magpsf'][choose].values[ind]
+        filt_choose = lc['filter'][choose].values[ind]
     elif sum(choose) == 1:
         # If there is only one choices...
         jd_choose = lc['jdobs'][choose].values[0]
