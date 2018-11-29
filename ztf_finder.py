@@ -291,7 +291,7 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
         ref_xpos_original = cat['xpos'][choose_ind][order][ii] - offset_x
         ref_ypos_original = cat['ypos'][choose_ind][order][ii] - offset_y
         # transform to flipped plot
-        ref_xpos = 600-ref_xpos_original
+        ref_xpos = ref_xpos_original
         ref_ypos = 600-ref_ypos_original
         plt.plot(
                 [ref_xpos+5,ref_xpos+20],[ref_ypos,ref_ypos], 
