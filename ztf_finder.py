@@ -238,8 +238,8 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
     smoothedimage = gaussian_filter(im, 1.3)
     # pad the image
     im_padded = np.pad(smoothedimage, 300, mode='constant', constant_values=0)
-    croppedimage = np.flipud(np.fliplr(
-        im_padded[int(ymin)+300:int(ymax)+300,int(xmin)+300:int(xmax)+300]))
+    croppedimage = np.flipud(
+        im_padded[int(ymin)+300:int(ymax)+300,int(xmin)+300:int(xmax)+300])
 
     plt.imshow(
             croppedimage, origin='lower', # convention for IPAC images
