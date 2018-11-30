@@ -29,6 +29,23 @@ def deg2hour(ra, dec, sep=":"):
     return str(ra), str(dec)
 
 
+def hour2deg(ra, dec):
+    '''
+    Transforms string HH:MM:SS DD:MM:SS coordinates into degrees (floats).
+    '''
+    try:
+        ra = float(ra)
+        dec = float(dec)
+        
+    except:
+        c = SkyCoord(ra, dec, frame='icrs', unit=(u.hourangle, u.deg))
+        
+        ra = c.ra.deg
+        dec = c.dec.deg
+    
+    return ra, dec
+
+
 def get_offset(ra1, dec1, ra2, dec2):
     '''
     Code from Nadia
@@ -306,7 +323,8 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
         dra, ddec = get_offset(refra, refdec, ra, dec)
 
         plt.text(
-                1.02, 0.60-0.1*ii, 'Ref S%s' %(ii+1), 
+                1.02, 0.60-0.1*ii, 
+                'Ref S%s, mag %s' %((ii+1), np.round(refmag,1)), 
                 transform=plt.axes().transAxes, fontweight='bold', color=cols[ii])
         plt.text(
                 1.02, 0.55-0.1*ii, 
@@ -334,8 +352,10 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
     # Set size of window (leaving space to right for ref star coords)
     plt.subplots_adjust(right=0.65,left=0.05, top=0.99, bottom=0.05)
 
-    # List name, coords, mag of reference
+    # List name, coords, mag of the target
     plt.text(1.02, 0.85, name, transform=plt.axes().transAxes, fontweight='bold')
+    # Can't print mag, because we don't know how bright the target is
+    #plt.text(1.02, 0.80, "%s"%mag, transform=plt.axes().transAxes, fontweight='bold')
     plt.text(1.02, 0.80, "%.5f %.5f"%(ra, dec),transform=plt.axes().transAxes)
     rah, dech = deg2hour(ra, dec)
     plt.text(1.02, 0.75,rah+"  "+dech, transform=plt.axes().transAxes)
