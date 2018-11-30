@@ -206,8 +206,10 @@ def choose_sci(zquery, out, name, ra, dec):
 def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=True, telescope="P200", directory=".", minmag=15, maxmag=18.5, mag=np.nan):
     """ Generate finder chart (Code modified from Nadia) """
 
+    name = str(name)
     ra = float(ra)
     dec = float(dec)
+    print(name)
 
     # Get metadata of all images at this location
     print("Querying for metadata...")
@@ -318,20 +320,38 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
                 c = cols[ii], ls='-', lw=2) 
         refra = cat['ra'][choose_ind][order][ii]
         refdec = cat['dec'][choose_ind][order][ii]
-        refrah, refdech = deg2hour(refra, refdec)
+        if telescope == 'Keck':
+            refrah, refdech = deg2hour(refra, refdec,sep=" ")
+        elif telescope == 'P200':
+            refrah, refdech = deg2hour(refra, refdec,sep=":")
+        else:
+            print("I don't recognize this telescope")
         refmag = cat['mag'][choose_ind][order][ii]+zp
         dra, ddec = get_offset(refra, refdec, ra, dec)
 
+        offsetnum = 0.2
         plt.text(
-                1.02, 0.60-0.1*ii, 
+                1.02, 0.60-offsetnum*ii, 
                 'Ref S%s, mag %s' %((ii+1), np.round(refmag,1)), 
                 transform=plt.axes().transAxes, fontweight='bold', color=cols[ii])
         plt.text(
-                1.02, 0.55-0.1*ii, 
+                1.02, 0.55-offsetnum*ii, 
+                '%s %s' %(refrah,refdech),
+                color=cols[ii], transform=plt.axes().transAxes)
+        plt.text(
+                1.02, 0.50-offsetnum*ii, 
                 str(np.round(ddec,2)) + "'' N, " + str(np.round(dra,2)) + "'' E", 
                 color=cols[ii], transform=plt.axes().transAxes)
+
         # Print starlist for telescope
-        print ("{:s} {:s} {:s}  2000.0 {:s} raoffset={:.2f} decoffset={:.2f} r={:.1f} {:s} ".format((name+"_S%s" %(ii+1)).ljust(20), refrah, refdech, separator, dra, ddec, refmag, commentchar))
+        if telescope == 'Keck':
+            # Target name is columns 1-16
+            # RA must begin in 17, separated by spaces
+            print ("{:s}{:s} {:s} 2000.0 {:s} raoffset={:.2f} decoffset={:.2f} {:s} r={:.1f} ".format((name+"_S%s" %(ii+1)).ljust(16), refrah, refdech, separator, dra, ddec, commentchar, refmag))
+        elif telescope == 'P200':
+            print ("{:s} {:s} {:s}  2000.0 {:s} raoffset={:.2f} decoffset={:.2f} r={:.1f} {:s} ".format((name+"_S%s" %(ii+1)).ljust(20), refrah, refdech, separator, dra, ddec, refmag, commentchar))
+        else:
+            print("I don't recognize this telescope.")
 
     # Plot compass
     plt.plot(
