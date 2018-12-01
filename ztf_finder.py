@@ -209,7 +209,6 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
     name = str(name)
     ra = float(ra)
     dec = float(dec)
-    print(name)
 
     # Get metadata of all images at this location
     print("Querying for metadata...")
@@ -415,7 +414,7 @@ if __name__ == '__main__':
         '''
         Creates the finder chart for the given RA, DEC and NAME.
         
-        Usage: ztf_finder.py <RA> <Dec> <Name> <rad [deg]> <telescope [P200|Keck]>
+        Usage: ztf_finder.py <RA [deg]> <Dec [deg]> <Name> <rad [deg]> <telescope [P200|Keck]>
             
         ''', formatter_class=argparse.RawTextHelpFormatter)
         
