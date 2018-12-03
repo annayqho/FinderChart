@@ -5,7 +5,7 @@ from astropy.coordinates import SkyCoord
 from ztf_finder import get_finder
 
 dat = np.loadtxt(
-    "/Users/annaho/Dropbox/Research/Observing/181201_starlist.txt", dtype=str)
+    "181203_starlist.txt", dtype=str)
 name = dat[:,0]
 hh = dat[:,1]
 mm = dat[:,2]

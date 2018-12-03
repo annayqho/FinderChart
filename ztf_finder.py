@@ -152,18 +152,22 @@ def choose_ref(zquery, ra, dec):
     """
     zquery.load_metadata(kind="ref",radec=[ra, dec], size=0.0001)
     out = zquery.metatable
-    # choose the index of the file with the deepest maglimit
-    ind = np.argmax(out['maglimit'])
-    urls, dl_loc = zquery.download_data(nodl=True)
-    imfile = dl_loc[ind]
-    # default is refimg
-    download_single_url(urls[ind], dl_loc[ind], cookies=None) 
-    # download the associated PSFcat
-    urls, dl_loc = zquery.download_data(nodl=True, suffix='refpsfcat.fits')
-    catfile = dl_loc[ind]
-    download_single_url(
-            urls[ind], dl_loc[ind], cookies=None)
-    return imfile, catfile
+    # If no files are returned,
+    if len(out) == 0:
+        print("Error: couldn't find any reference at this position.")
+    else:
+        # choose the index of the file with the deepest maglimit
+        ind = out['maglimit'].idxmax()
+        urls, dl_loc = zquery.download_data(nodl=True)
+        imfile = dl_loc[ind]
+        # default is refimg
+        download_single_url(urls[ind], dl_loc[ind], cookies=None) 
+        # download the associated PSFcat
+        urls, dl_loc = zquery.download_data(nodl=True, suffix='refpsfcat.fits')
+        catfile = dl_loc[ind]
+        download_single_url(
+                urls[ind], dl_loc[ind], cookies=None)
+        return imfile, catfile
 
 
 def choose_sci(zquery, out, name, ra, dec):
@@ -213,6 +217,8 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
     # Get metadata of all images at this location
     print("Querying for metadata...")
     zquery = query.ZTFQuery()
+    print(ra)
+    print(dec)
     zquery.load_metadata(
             radec=[ra,dec], size=0.01)
     out = zquery.metatable
