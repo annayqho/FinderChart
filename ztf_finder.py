@@ -413,6 +413,7 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
             f.write('\n')     
 
     plt.savefig("finder_chart_%s.png" %name)
+    plt.close()
 
 
 if __name__ == '__main__':
