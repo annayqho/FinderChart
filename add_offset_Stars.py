@@ -6,7 +6,7 @@ from ztf_finder import get_finder
 
 dat = np.loadtxt(
     "181203_starlist.txt", dtype=str)
-name = dat[:,0]
+names = dat[:,0]
 hh = dat[:,1]
 mm = dat[:,2]
 ss = dat[:,3]
@@ -24,7 +24,7 @@ decdeg = c.dec.deg
 #         float(radeg), float(decdeg), str(name), 
 #         rad=0.2, telescope='Keck', debug=False, minmag=7, maxmag=18)
 
-for ii,name in enumerate(name):
+for ii,name in enumerate(names[33:]):
     print(name)
     print(radeg[ii])
     print(decdeg[ii])
