@@ -225,6 +225,7 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
 
     # Do you need to use a reference image?
     need_ref = len(out) == 0
+    need_ref = 1
     if need_ref:
         print("Using a reference image")
         imfile, catfile = choose_ref(zquery, ra, dec)
@@ -262,8 +263,18 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
     smoothedimage = gaussian_filter(im, 1.3)
     # pad the image
     im_padded = np.pad(smoothedimage, 300, mode='constant', constant_values=0)
-    croppedimage = np.flipud(
-        im_padded[int(ymin)+300:int(ymax)+300,int(xmin)+300:int(xmax)+300])
+
+    # If it's a reference image, you have to flip it up/down and left/right
+    if need_ref:
+        croppedimage = np.fliplr(np.flipud(
+            im_padded[int(ymin)+300:int(ymax)+300,
+                int(xmin)+300:int(xmax)+300]))
+
+    # If it's a science image, you just flip it up/down
+    else:
+        croppedimage = np.flipud(
+            im_padded[int(ymin)+300:int(ymax)+300,
+                int(xmin)+300:int(xmax)+300])
 
     plt.imshow(
             croppedimage, origin='lower', # convention for IPAC images
@@ -275,6 +286,7 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
     plt.plot([300+5,300+20],[300,300], 'g-', lw=2)
     # vertical line
     plt.plot([300,300],[300+5,300+20], 'g-', lw=2)
+
     # and the offset of the original coordinate system with the new coordinates
     offset_x = xpos-300
     offset_y = ypos-300
@@ -314,9 +326,15 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
     for ii in np.arange(nref):
         ref_xpos_original = cat['xpos'][choose_ind][order][ii] - offset_x
         ref_ypos_original = cat['ypos'][choose_ind][order][ii] - offset_y
+
         # transform to flipped plot
-        ref_xpos = ref_xpos_original
-        ref_ypos = 600-ref_ypos_original
+        if need_ref:
+            ref_xpos = 600-ref_xpos_original
+            ref_ypos = 600-ref_ypos_original
+        else:
+            ref_xpos = ref_xpos_original
+            ref_ypos = 600-ref_ypos_original
+
         plt.plot(
                 [ref_xpos+5,ref_xpos+20],[ref_ypos,ref_ypos], 
                 c=cols[ii], ls='-', lw=2)

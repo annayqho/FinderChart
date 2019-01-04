@@ -5,7 +5,7 @@ from astropy.coordinates import SkyCoord
 from ztf_finder import get_finder
 
 dat = np.loadtxt(
-    "181203_starlist.txt", dtype=str)
+    "181214_starlist.txt", dtype=str)
 names = dat[:,0]
 hh = dat[:,1]
 mm = dat[:,2]
@@ -24,10 +24,10 @@ decdeg = c.dec.deg
 #         float(radeg), float(decdeg), str(name), 
 #         rad=0.2, telescope='Keck', debug=False, minmag=7, maxmag=18)
 
-for ii,name in enumerate(names[33:]):
+for ii,name in enumerate(names[0:10]):
     print(name)
     print(radeg[ii])
     print(decdeg[ii])
     get_finder(
             float(radeg[ii]), float(decdeg[ii]), str(name), 
-            rad=0.2, telescope='Keck', debug=False, minmag=7, maxmag=18)
+            rad=0.2, telescope='P200', debug=False, minmag=7, maxmag=18)
