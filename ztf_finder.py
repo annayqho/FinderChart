@@ -161,6 +161,10 @@ def choose_ref(zquery, ra, dec):
         ind = 1
         urls, dl_loc = zquery.download_data(nodl=True)
         imfile = dl_loc[ind]
+        # Temp bug fix: check to make sure the URL is correct
+        imfile_array = imfile.split("/")
+        imfile_array[3] = imfile_array[4][5:8]
+        imfile = '/'.join(imfile_array)
         # default is refimg
         download_single_url(urls[ind], dl_loc[ind], cookies=None) 
         # download the associated PSFcat
