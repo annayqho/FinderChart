@@ -158,6 +158,7 @@ def choose_ref(zquery, ra, dec):
     else:
         # choose the index of the file with the deepest maglimit
         ind = out['maglimit'].idxmax()
+        ind = 1
         urls, dl_loc = zquery.download_data(nodl=True)
         imfile = dl_loc[ind]
         # default is refimg
@@ -217,15 +218,12 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
     # Get metadata of all images at this location
     print("Querying for metadata...")
     zquery = query.ZTFQuery()
-    print(ra)
-    print(dec)
     zquery.load_metadata(
             radec=[ra,dec], size=0.01)
     out = zquery.metatable
 
     # Do you need to use a reference image?
     need_ref = len(out) == 0
-    need_ref = 1
     if need_ref:
         print("Using a reference image")
         imfile, catfile = choose_ref(zquery, ra, dec)
