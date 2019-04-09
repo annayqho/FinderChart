@@ -78,8 +78,8 @@ def get_lc(name):
     m = marshal.MarshalAccess()
     m.download_lightcurve(name) 
     lc = marshal.get_local_lightcurves(name)
-    lc_dict = [lc[key] for key in lc.keys()][0]
-    return lc_dict
+    #lc_dict = [lc[key] for key in lc.keys()][0]
+    return lc
 
 
 def get_refstars(xpos, ypos, cat):
@@ -178,6 +178,7 @@ def choose_ref(zquery, ra, dec):
 def choose_sci(zquery, out, name, ra, dec):
     """ Choose a science image to use, and download the file """
     lc = get_lc(name)
+    print(lc)
     # Count the number of detections where limmag > 19.5
     # If 0, allow limmag > 19
     limmag = lc.limmag.values
