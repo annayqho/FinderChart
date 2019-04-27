@@ -228,13 +228,16 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
 
     # Do you need to use a reference image?
     need_ref = len(out) == 0
-    need_ref = 1
+    if need_ref is False:
+        print("Trying to using a science image")
+        try:
+            imfile, catfile = choose_sci(zquery, out, name, ra, dec)
+        except:
+            print("retrieving science image failed")
+            need_ref = True
     if need_ref:
         print("Using a reference image")
         imfile, catfile = choose_ref(zquery, ra, dec)
-    else:
-        print("Using a science image")
-        imfile, catfile = choose_sci(zquery, out, name, ra, dec)
 
     # get the cutout
     inputf = pyfits.open(imfile)
