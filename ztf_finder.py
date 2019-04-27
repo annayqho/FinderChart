@@ -74,11 +74,10 @@ def get_pos(name):
 
 
 def get_lc(name):
-    """ Get light curve of target """
     m = marshal.MarshalAccess()
     m.download_lightcurve(name) 
-    lc = marshal.get_local_lightcurves(name)
-    #lc_dict = [lc[key] for key in lc.keys()][0]
+    lcpath = './Data/marshal/lightcurves/'+name+'/marshal_plot_lc_lightcurve_'+name+'.csv'
+    lc = pd.read_csv(lcpath)
     return lc
 
 
@@ -229,6 +228,7 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None, print_starlist=Tr
 
     # Do you need to use a reference image?
     need_ref = len(out) == 0
+    need_ref = 1
     if need_ref:
         print("Using a reference image")
         imfile, catfile = choose_ref(zquery, ra, dec)
